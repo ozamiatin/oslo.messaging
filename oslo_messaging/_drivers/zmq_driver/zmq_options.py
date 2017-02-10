@@ -91,7 +91,7 @@ zmq_opts = [
                 deprecated_group='DEFAULT',
                 help='Use ROUTER remote proxy.'),
 
-    cfg.BoolOpt('use_dynamic_connections', default=False,
+    cfg.BoolOpt('use_dynamic_connections', default=True,
                 help='This option makes direct connections dynamic or static. '
                      'It makes sense only with use_router_proxy=False which '
                      'means to use direct connections for direct message '
