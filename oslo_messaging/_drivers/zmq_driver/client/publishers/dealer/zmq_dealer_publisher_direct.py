@@ -14,6 +14,8 @@
 
 import logging
 
+import tenacity
+
 from oslo_messaging._drivers.zmq_driver.client.publishers.dealer \
     import zmq_dealer_publisher_base
 from oslo_messaging._drivers.zmq_driver.client import zmq_receivers
@@ -89,12 +91,20 @@ class DealerPublisherDirect(zmq_dealer_publisher_base.DealerPublisherBase):
         super(DealerPublisherDirect, self)._finally_unregister(socket, request)
         self.receiver.unregister_socket(socket)
 
-    def send_request(self, socket, request):
+    def _do_send(self, socket, request):
         if request.msg_type in zmq_names.MULTISEND_TYPES:
             for _ in range(socket.connections_count()):
                 self.sender.send(socket, request)
         else:
             self.sender.send(socket, request)
+
+    def send_request(self, socket, request):
+        @tenacity.retry(retry=tenacity.retry_if_exception_type(zmq.Again),
+                        stop=tenacity.stop_after_delay(
+                            self.conf.rpc_response_timeout))
+        def send_retrying():
+            self._do_send(socket, request)
+        return send_retrying()
 
     def cleanup(self):
         self.routing_table.cleanup()
@@ -128,6 +138,9 @@ class DealerPublisherDirectStatic(DealerPublisherDirect):
             hosts = self.routing_table.get_all_round_robin_hosts(
                 request.target)
             return self.sockets_manager.get_cached_socket(target_key, hosts)
+
+    def send_request(self, socket, request):
+        self._do_send(socket, request)
 
     def _finally_unregister(self, socket, request):
         self.receiver.untrack_request(request)

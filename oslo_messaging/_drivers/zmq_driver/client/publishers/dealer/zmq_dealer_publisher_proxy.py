@@ -16,6 +16,7 @@ import random
 import uuid
 
 import six
+import tenacity
 
 from oslo_messaging._drivers.zmq_driver.client.publishers.dealer \
     import zmq_dealer_publisher_base
@@ -111,6 +112,7 @@ class DealerPublisherProxyDynamic(
             socket.connect_to_host(publisher)
         return socket
 
+    @tenacity.retry(retry=tenacity.retry_if_exception_type(zmq.Again))
     def send_request(self, socket, request):
         request.routing_key = \
             zmq_address.target_to_subscribe_filter(request.target)
