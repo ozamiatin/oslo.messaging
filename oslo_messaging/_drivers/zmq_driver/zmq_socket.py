@@ -57,8 +57,9 @@ class ZmqSocket(object):
         self.handle.setsockopt(zmq.IMMEDIATE, 1 if immediate else 0)
 
         # Setup timeout on socket sending
-        self.handle.setsockopt(zmq.SNDTIMEO,
-                               self.conf.rpc_response_timeout * 1000)
+        if self.conf.hasattr('rpc_response_timeout'):
+            self.handle.setsockopt(zmq.SNDTIMEO,
+                                   self.conf.rpc_response_timeout * 1000)
 
         # Configure TCP keep alive
         keepalive = self.conf.oslo_messaging_zmq.zmq_tcp_keepalive
