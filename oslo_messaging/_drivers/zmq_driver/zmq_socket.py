@@ -57,7 +57,7 @@ class ZmqSocket(object):
         self.handle.setsockopt(zmq.IMMEDIATE, 1 if immediate else 0)
 
         # Setup timeout on socket sending
-        if self.conf.hasattr('rpc_response_timeout'):
+        if hasattr(self.conf, 'rpc_response_timeout'):
             self.handle.setsockopt(zmq.SNDTIMEO,
                                    self.conf.rpc_response_timeout * 1000)
 
